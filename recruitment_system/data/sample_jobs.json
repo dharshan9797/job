@@ -1,0 +1,95 @@
+[
+  {
+    "id": "swe-senior-001",
+    "title": "Senior Software Engineer — Backend",
+    "department": "Engineering",
+    "level": "senior",
+    "description": "We are seeking a Senior Backend Engineer to design, build, and maintain scalable microservices powering our data platform. You will work closely with product and data teams to deliver high-quality, production-grade Python services with strong test coverage.",
+    "requirements": [
+      "5+ years of professional Python development experience",
+      "Deep expertise in FastAPI, Django, or Flask",
+      "Strong SQL and PostgreSQL skills (query optimisation, indexing, schema design)",
+      "Experience designing and consuming RESTful and gRPC APIs",
+      "Proficiency with Docker and Kubernetes in production environments",
+      "Strong understanding of distributed systems, caching (Redis), and message queues (Kafka/RabbitMQ)",
+      "Experience with CI/CD pipelines (GitHub Actions, Jenkins, or similar)",
+      "Ability to lead technical design discussions and mentor junior engineers"
+    ],
+    "nice_to_have": [
+      "Experience with Apache Spark or dbt for data pipelines",
+      "Familiarity with AWS or GCP cloud services",
+      "Contributions to open-source projects",
+      "Experience with Terraform or infrastructure-as-code"
+    ],
+    "tech_stack": ["Python", "FastAPI", "PostgreSQL", "Redis", "Kafka", "Docker", "Kubernetes", "AWS"]
+  },
+  {
+    "id": "ml-engineer-001",
+    "title": "Machine Learning Engineer",
+    "department": "AI/ML",
+    "level": "mid",
+    "description": "Join our ML team to build, train, and deploy production machine learning models that power personalization, fraud detection, and recommendation features across our platform.",
+    "requirements": [
+      "3+ years of experience in ML engineering or applied ML research",
+      "Strong Python skills with PyTorch or TensorFlow",
+      "Experience with MLflow, Kubeflow, or similar MLOps platforms",
+      "Proficiency in feature engineering and data preprocessing at scale",
+      "Solid understanding of model training, evaluation, and deployment lifecycle",
+      "Experience serving ML models via REST APIs (FastAPI/Flask)",
+      "Familiarity with vector databases (Pinecone, Weaviate, Chroma) for embedding-based systems"
+    ],
+    "nice_to_have": [
+      "Experience with LLMs, RAG, or generative AI applications",
+      "Knowledge of model quantisation and performance optimisation",
+      "Publications or conference presentations",
+      "Experience with Spark for large-scale feature engineering"
+    ],
+    "tech_stack": ["Python", "PyTorch", "TensorFlow", "MLflow", "FastAPI", "PostgreSQL", "Kubernetes", "GCP"]
+  },
+  {
+    "id": "frontend-001",
+    "title": "Senior Frontend Engineer — React",
+    "department": "Product Engineering",
+    "level": "senior",
+    "description": "We're looking for a Senior Frontend Engineer to lead the development of our next-generation web product, focusing on performance, accessibility, and delightful user experiences.",
+    "requirements": [
+      "5+ years of frontend development experience",
+      "Expert-level React.js (hooks, context, performance patterns)",
+      "Strong TypeScript skills",
+      "Experience with state management (Redux, Zustand, or React Query)",
+      "Deep understanding of web performance optimisation (Core Web Vitals, lazy loading, code splitting)",
+      "Proficiency with testing frameworks: Jest, React Testing Library, Playwright",
+      "Solid understanding of REST and GraphQL APIs"
+    ],
+    "nice_to_have": [
+      "Experience with Next.js or Remix",
+      "Familiarity with micro-frontend architecture",
+      "Design system authorship experience (Storybook)",
+      "Contributions to open-source React libraries"
+    ],
+    "tech_stack": ["React", "TypeScript", "Next.js", "Redux", "GraphQL", "Jest", "Playwright", "Storybook"]
+  },
+  {
+    "id": "devops-001",
+    "title": "DevOps / Platform Engineer",
+    "department": "Infrastructure",
+    "level": "mid",
+    "description": "Build and maintain the cloud infrastructure, CI/CD pipelines, and observability stack that enables our engineering teams to ship fast and reliably.",
+    "requirements": [
+      "3+ years in a DevOps, SRE, or Platform Engineering role",
+      "Deep hands-on AWS experience (EKS, RDS, S3, CloudFormation/Terraform)",
+      "Strong Kubernetes administration skills",
+      "Experience building and maintaining CI/CD pipelines",
+      "Proficiency with infrastructure-as-code (Terraform or Pulumi)",
+      "Monitoring and observability experience (Prometheus, Grafana, Datadog)",
+      "Strong scripting skills (Bash, Python)"
+    ],
+    "nice_to_have": [
+      "Experience with GitOps (ArgoCD, Flux)",
+      "Security hardening and compliance (SOC 2, ISO 27001)",
+      "Experience with FinOps and cloud cost optimisation",
+      "Multi-region deployment experience"
+    ],
+    "tech_stack": ["AWS", "Kubernetes", "Terraform", "Docker", "Prometheus", "Grafana", "Python", "Bash", "ArgoCD"]
+  }
+]

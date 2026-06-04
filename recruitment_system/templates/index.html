@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Recruitment Intelligence System</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        brand: { 50:'#f0f9ff', 100:'#e0f2fe', 500:'#0ea5e9', 600:'#0284c7', 700:'#0369a1' }
+      }
+    }
+  }
+}
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  body { font-family: 'Inter', sans-serif; }
+  .spinner { border: 3px solid #e2e8f0; border-top-color: #0ea5e9; border-radius: 50%; width: 28px; height: 28px; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .skill-bar { transition: width .6s ease; }
+  .fade-in { animation: fadeIn .4s ease; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+  .tab-btn.active { border-bottom: 2px solid #0ea5e9; color: #0ea5e9; }
+  .score-ring { stroke-dasharray: 251; stroke-dashoffset: 251; transition: stroke-dashoffset 1s ease; }
+</style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+
+<!-- NAV -->
+<nav class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-10">
+  <div class="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">⚡</span>
+      <span class="font-bold text-lg tracking-tight">Recruitment <span class="text-sky-400">Intelligence</span></span>
+    </div>
+    <div class="flex items-center gap-2 text-xs text-slate-400">
+      <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
+      LangGraph · LangChain · RAG · Groq
+    </div>
+  </div>
+</nav>
+
+<div class="max-w-7xl mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-5 gap-8">
+
+  <!-- LEFT — INPUT PANEL -->
+  <aside class="lg:col-span-2 space-y-4">
+    <div class="bg-slate-900 rounded-2xl border border-slate-800 p-6 space-y-5">
+      <h2 class="font-semibold text-slate-200 text-sm uppercase tracking-widest">Candidate Input</h2>
+
+      <!-- Tabs -->
+      <div class="flex gap-4 border-b border-slate-700 text-sm font-medium text-slate-400">
+        <button id="tab-text" class="tab-btn active pb-2" onclick="switchTab('text')">Paste Resume</button>
+        <button id="tab-file" class="tab-btn pb-2" onclick="switchTab('file')">Upload File</button>
+      </div>
+
+      <!-- Paste text -->
+      <div id="pane-text">
+        <textarea id="resume-text" rows="10"
+          class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 resize-none focus:outline-none focus:ring-2 focus:ring-sky-500 placeholder-slate-500"
+          placeholder="Paste resume text here…"></textarea>
+      </div>
+
+      <!-- Upload file -->
+      <div id="pane-file" class="hidden">
+        <label class="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-slate-600 rounded-xl cursor-pointer hover:border-sky-500 transition">
+          <span class="text-3xl mb-1">📄</span>
+          <span class="text-sm text-slate-400" id="file-label">Click to upload .txt / .pdf / .docx</span>
+          <input id="resume-file" type="file" accept=".txt,.pdf,.docx" class="hidden" onchange="onFileChange(this)" />
+        </label>
+      </div>
+
+      <div class="space-y-3">
+        <input id="job-title" type="text" placeholder="Job Title  e.g. Senior Backend Engineer"
+          class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 placeholder-slate-500" />
+
+        <textarea id="job-desc" rows="5"
+          class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-sky-500 placeholder-slate-500"
+          placeholder="Job description (paste or leave blank to use job title)…"></textarea>
+      </div>
+
+      <div class="flex gap-3">
+        <button onclick="runAnalyse()"
+          class="flex-1 bg-sky-600 hover:bg-sky-500 text-white font-semibold py-2.5 rounded-xl text-sm transition">
+          Analyse Resume
+        </button>
+        <button onclick="runDemo()"
+          class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold py-2.5 rounded-xl text-sm transition">
+          Run Demo
+        </button>
+      </div>
+
+      <!-- Pipeline steps -->
+      <div id="pipeline-steps" class="hidden space-y-2 pt-2">
+        <p class="text-xs text-slate-400 font-medium uppercase tracking-widest">Pipeline</p>
+        <div id="steps-list" class="space-y-1.5"></div>
+      </div>
+    </div>
+
+    <!-- Agents legend -->
+    <div class="bg-slate-900 rounded-2xl border border-slate-800 p-5">
+      <p class="text-xs text-slate-400 font-medium uppercase tracking-widest mb-3">5 Agents</p>
+      <div class="space-y-2 text-sm">
+        <div class="flex items-center gap-2"><span class="text-base">📄</span><span class="text-slate-300">Resume Parsing Agent</span></div>
+        <div class="flex items-center gap-2"><span class="text-base">🔬</span><span class="text-slate-300">Skill Extraction Agent</span></div>
+        <div class="flex items-center gap-2"><span class="text-base">📊</span><span class="text-slate-300">Candidate Ranking Agent</span></div>
+        <div class="flex items-center gap-2"><span class="text-base">🎯</span><span class="text-slate-300">Interview Question Agent</span></div>
+        <div class="flex items-center gap-2"><span class="text-base">⚖️</span><span class="text-slate-300">Hiring Recommendation Agent</span></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- RIGHT — RESULTS PANEL -->
+  <main class="lg:col-span-3 space-y-6" id="results-panel">
+
+    <!-- Placeholder -->
+    <div id="placeholder" class="flex flex-col items-center justify-center h-96 text-slate-600 space-y-3">
+      <span class="text-6xl">🤖</span>
+      <p class="text-lg font-medium">Run an analysis to see results</p>
+      <p class="text-sm">Paste a resume and job description, or click <strong>Run Demo</strong></p>
+    </div>
+
+    <!-- Loading -->
+    <div id="loading" class="hidden flex-col items-center justify-center h-96 space-y-4 text-slate-400">
+      <div class="spinner mx-auto"></div>
+      <p id="loading-msg" class="text-sm">Starting multi-agent pipeline…</p>
+    </div>
+
+    <!-- Error -->
+    <div id="error-box" class="hidden bg-red-900/40 border border-red-700 rounded-2xl p-5 text-red-300 text-sm"></div>
+
+    <!-- Results (hidden until data arrives) -->
+    <div id="results" class="hidden space-y-5 fade-in">
+
+      <!-- Decision banner -->
+      <div id="decision-banner" class="rounded-2xl p-5 border flex items-center justify-between">
+        <div>
+          <p class="text-xs text-slate-400 uppercase tracking-widest mb-1">Hiring Decision</p>
+          <p id="decision-label" class="text-2xl font-bold"></p>
+          <p id="decision-summary" class="text-sm text-slate-300 mt-1 max-w-lg"></p>
+        </div>
+        <div class="relative w-24 h-24 flex-shrink-0">
+          <svg viewBox="0 0 90 90" class="w-full h-full -rotate-90">
+            <circle cx="45" cy="45" r="40" fill="none" stroke="#1e293b" stroke-width="8"/>
+            <circle id="score-ring" cx="45" cy="45" r="40" fill="none" stroke="#0ea5e9" stroke-width="8" class="score-ring" stroke-linecap="round"/>
+          </svg>
+          <div class="absolute inset-0 flex flex-col items-center justify-center rotate-0">
+            <span id="score-num" class="text-2xl font-bold text-white"></span>
+            <span class="text-xs text-slate-400">/100</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex gap-1 bg-slate-900 rounded-xl p-1 border border-slate-800">
+        <button onclick="showSection('profile')" class="sec-tab active flex-1 text-sm py-2 rounded-lg font-medium">👤 Profile</button>
+        <button onclick="showSection('skills')" class="sec-tab flex-1 text-sm py-2 rounded-lg font-medium">🔧 Skills</button>
+        <button onclick="showSection('score')" class="sec-tab flex-1 text-sm py-2 rounded-lg font-medium">📊 Score</button>
+        <button onclick="showSection('interview')" class="sec-tab flex-1 text-sm py-2 rounded-lg font-medium">🎯 Interview</button>
+        <button onclick="showSection('rec')" class="sec-tab flex-1 text-sm py-2 rounded-lg font-medium">📋 Details</button>
+      </div>
+
+      <!-- Profile section -->
+      <div id="sec-profile" class="sec-pane bg-slate-900 rounded-2xl border border-slate-800 p-5 space-y-3"></div>
+
+      <!-- Skills section -->
+      <div id="sec-skills" class="sec-pane hidden bg-slate-900 rounded-2xl border border-slate-800 p-5 space-y-4"></div>
+
+      <!-- Score section -->
+      <div id="sec-score" class="sec-pane hidden bg-slate-900 rounded-2xl border border-slate-800 p-5 space-y-3"></div>
+
+      <!-- Interview section -->
+      <div id="sec-interview" class="sec-pane hidden bg-slate-900 rounded-2xl border border-slate-800 p-5 space-y-4"></div>
+
+      <!-- Recommendation section -->
+      <div id="sec-rec" class="sec-pane hidden bg-slate-900 rounded-2xl border border-slate-800 p-5 space-y-4"></div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+// ─── State ──────────────────────────────────────────────────────────────────
+let currentTab = 'text';
+let currentSection = 'profile';
+
+// ─── Tab switcher ────────────────────────────────────────────────────────────
+function switchTab(t) {
+  currentTab = t;
+  ['text','file'].forEach(x => {
+    document.getElementById('tab-'+x).classList.toggle('active', x===t);
+    document.getElementById('pane-'+x).classList.toggle('hidden', x!==t);
+  });
+}
+function onFileChange(el) {
+  document.getElementById('file-label').textContent = el.files[0]?.name || 'No file chosen';
+}
+
+// ─── Section switcher ────────────────────────────────────────────────────────
+function showSection(s) {
+  currentSection = s;
+  document.querySelectorAll('.sec-tab').forEach((b,i) => {
+    b.classList.toggle('active', ['profile','skills','score','interview','rec'][i] === s);
+    b.classList.toggle('bg-slate-800', ['profile','skills','score','interview','rec'][i] === s);
+    b.classList.toggle('text-sky-400', ['profile','skills','score','interview','rec'][i] === s);
+  });
+  document.querySelectorAll('.sec-pane').forEach(p => p.classList.add('hidden'));
+  document.getElementById('sec-'+s).classList.remove('hidden');
+}
+
+// ─── Pipeline steps UI ───────────────────────────────────────────────────────
+const STEPS = [
+  'RAG Retrieval','Resume Parsing','Skill Extraction',
+  'Candidate Ranking','Interview Questions','Hiring Recommendation'
+];
+function initSteps() {
+  const el = document.getElementById('steps-list');
+  el.innerHTML = STEPS.map((s,i) => `
+    <div id="step-${i}" class="flex items-center gap-2 text-sm text-slate-500">
+      <span class="w-4 h-4 rounded-full border border-slate-600 flex items-center justify-center text-xs" id="step-icon-${i}">○</span>
+      <span>${s}</span>
+    </div>`).join('');
+}
+function setStep(i, state) {
+  const el = document.getElementById('step-'+i);
+  const icon = document.getElementById('step-icon-'+i);
+  if (state === 'running') {
+    el.className = 'flex items-center gap-2 text-sm text-sky-400';
+    icon.innerHTML = '<div class="w-3 h-3 rounded-full bg-sky-400 animate-pulse"></div>';
+  } else if (state === 'done') {
+    el.className = 'flex items-center gap-2 text-sm text-emerald-400';
+    icon.textContent = '✓';
+  }
+}
+
+// ─── API calls ───────────────────────────────────────────────────────────────
+async function runDemo() {
+  showLoading('Running demo with sample candidate Alex Morgan…');
+  try {
+    const res = await fetch('/api/demo', { method: 'POST' });
+    if (!res.ok) throw new Error((await res.json()).detail);
+    renderResults(await res.json());
+  } catch(e) { showError(e.message); }
+}
+
+async function runAnalyse() {
+  if (currentTab === 'file') {
+    const file = document.getElementById('resume-file').files[0];
+    if (!file) return alert('Please select a resume file.');
+    const jt = document.getElementById('job-title').value.trim();
+    if (!jt) return alert('Please enter a job title.');
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('job_title', jt);
+    fd.append('job_description', document.getElementById('job-desc').value);
+    showLoading('Uploading & analysing resume…');
+    try {
+      const res = await fetch('/api/analyse-file', { method: 'POST', body: fd });
+      if (!res.ok) throw new Error((await res.json()).detail);
+      renderResults(await res.json());
+    } catch(e) { showError(e.message); }
+  } else {
+    const text = document.getElementById('resume-text').value.trim();
+    if (!text) return alert('Please paste resume text.');
+    const jt = document.getElementById('job-title').value.trim();
+    if (!jt) return alert('Please enter a job title.');
+    showLoading('Analysing resume through 5 agents…');
+    try {
+      const res = await fetch('/api/analyse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resume_text: text, job_title: jt, job_description: document.getElementById('job-desc').value })
+      });
+      if (!res.ok) throw new Error((await res.json()).detail);
+      renderResults(await res.json());
+    } catch(e) { showError(e.message); }
+  }
+}
+
+// ─── UI helpers ──────────────────────────────────────────────────────────────
+function showLoading(msg) {
+  document.getElementById('placeholder').classList.add('hidden');
+  document.getElementById('error-box').classList.add('hidden');
+  document.getElementById('results').classList.add('hidden');
+  const ld = document.getElementById('loading');
+  ld.classList.remove('hidden');
+  ld.classList.add('flex');
+  document.getElementById('loading-msg').textContent = msg;
+  document.getElementById('pipeline-steps').classList.remove('hidden');
+  initSteps();
+  // Animate steps with delays to simulate progress
+  STEPS.forEach((_, i) => setTimeout(() => setStep(i, 'running'), i * 3500));
+}
+function showError(msg) {
+  document.getElementById('loading').classList.add('hidden');
+  document.getElementById('loading').classList.remove('flex');
+  const eb = document.getElementById('error-box');
+  eb.textContent = '⚠️  ' + msg;
+  eb.classList.remove('hidden');
+}
+
+// ─── Render results ──────────────────────────────────────────────────────────
+function renderResults(data) {
+  document.getElementById('loading').classList.add('hidden');
+  document.getElementById('loading').classList.remove('flex');
+  STEPS.forEach((_,i) => setStep(i,'done'));
+
+  const results = document.getElementById('results');
+  results.classList.remove('hidden');
+  document.getElementById('placeholder').classList.add('hidden');
+
+  const rec = data.recommendation || {};
+  const score = data.candidate_score?.overall_score ?? 0;
+  const parsed = data.parsed_resume || {};
+  const skills = data.skill_analysis || {};
+  const ip = data.interview_plan || {};
+
+  // ── Decision banner ──
+  const decisionColors = {
+    strong_hire: ['border-emerald-500 bg-emerald-900/20','text-emerald-400','#10b981'],
+    hire:        ['border-sky-500 bg-sky-900/20','text-sky-400','#0ea5e9'],
+    maybe:       ['border-amber-500 bg-amber-900/20','text-amber-400','#f59e0b'],
+    no_hire:     ['border-red-500 bg-red-900/20','text-red-400','#ef4444'],
+    strong_no_hire:['border-red-700 bg-red-900/30','text-red-300','#dc2626'],
+  };
+  const dKey = rec.decision || 'maybe';
+  const [bannerCls, textCls, ringColor] = decisionColors[dKey] || decisionColors.maybe;
+  const decisionLabels = { strong_hire:'🌟 Strong Hire', hire:'✅ Hire', maybe:'🤔 Maybe', no_hire:'❌ No Hire', strong_no_hire:'🚫 Strong No Hire' };
+
+  document.getElementById('decision-banner').className = `rounded-2xl p-5 border flex items-center justify-between ${bannerCls}`;
+  document.getElementById('decision-label').className = `text-2xl font-bold ${textCls}`;
+  document.getElementById('decision-label').textContent = decisionLabels[dKey] || dKey;
+  document.getElementById('decision-summary').textContent = rec.summary || '';
+  document.getElementById('score-num').textContent = Math.round(score);
+  // Ring animation
+  const ring = document.getElementById('score-ring');
+  ring.style.stroke = ringColor;
+  setTimeout(() => { ring.style.strokeDashoffset = 251 - (251 * score / 100); }, 200);
+
+  // ── Profile ──
+  const profEl = document.getElementById('sec-profile');
+  const exp = parsed.work_experience || [];
+  const edu = parsed.education || [];
+  profEl.innerHTML = `
+    <div class="grid grid-cols-2 gap-4">
+      ${field('👤 Name', parsed.candidate_name || '—')}
+      ${field('📧 Email', parsed.email || '—')}
+      ${field('📍 Location', parsed.location || '—')}
+      ${field('⏱ Experience', (parsed.total_experience_years||0)+' years · '+(parsed.experience_level||'—'))}
+      ${field('🔗 LinkedIn', parsed.linkedin || '—')}
+      ${field('💻 GitHub', parsed.github || '—')}
+    </div>
+    ${parsed.summary ? `<p class="mt-4 text-sm text-slate-300 leading-relaxed italic">"${parsed.summary}"</p>` : ''}
+    ${exp.length ? `
+    <div class="mt-4">
+      <p class="text-xs text-slate-400 uppercase tracking-widest mb-2">Work History</p>
+      <div class="space-y-2">
+        ${exp.map(e=>`
+          <div class="bg-slate-800 rounded-xl p-3">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="font-semibold text-sm text-slate-200">${e.title}</p>
+                <p class="text-xs text-slate-400">${e.company}</p>
+              </div>
+              <span class="text-xs text-slate-500">${Math.round((e.duration_months||0)/12*10)/10}y</span>
+            </div>
+            ${e.technologies?.length ? `<p class="text-xs text-sky-400 mt-1">${e.technologies.slice(0,6).join(' · ')}</p>` : ''}
+          </div>`).join('')}
+      </div>
+    </div>` : ''}
+    ${edu.length ? `
+    <div class="mt-4">
+      <p class="text-xs text-slate-400 uppercase tracking-widest mb-2">Education</p>
+      ${edu.map(e=>`<div class="text-sm text-slate-300">${e.degree} in ${e.field} — ${e.institution} <span class="text-slate-500">(${e.graduation_year||'N/A'})</span></div>`).join('')}
+    </div>` : ''}
+  `;
+
+  // ── Skills ──
+  const skillsEl = document.getElementById('sec-skills');
+  const sortedSkills = (skills.skills||[]).sort((a,b)=>b.proficiency-a.proficiency).slice(0,15);
+  const gaps = skills.skill_gaps || [];
+  const catColors = { technical:'bg-sky-900 text-sky-300', language:'bg-violet-900 text-violet-300', framework:'bg-indigo-900 text-indigo-300', tool:'bg-teal-900 text-teal-300', soft:'bg-pink-900 text-pink-300', database:'bg-orange-900 text-orange-300', domain:'bg-yellow-900 text-yellow-300', certification:'bg-emerald-900 text-emerald-300', platform:'bg-cyan-900 text-cyan-300', methodology:'bg-rose-900 text-rose-300' };
+  skillsEl.innerHTML = `
+    <div>
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-xs text-slate-400 uppercase tracking-widest">Skills</p>
+        <div class="flex items-center gap-2 text-xs text-slate-400">Coverage <span class="text-sky-400 font-bold">${Math.round((skills.coverage_score||0)*100)}%</span></div>
+      </div>
+      <div class="w-full bg-slate-800 rounded-full h-2 mb-4">
+        <div class="bg-sky-500 h-2 rounded-full skill-bar" style="width:${Math.round((skills.coverage_score||0)*100)}%"></div>
+      </div>
+      <div class="space-y-2">
+        ${sortedSkills.map(s=>{
+          const pct = Math.round(s.proficiency*100);
+          const barColor = pct>=80?'bg-emerald-500':pct>=60?'bg-sky-500':pct>=40?'bg-amber-500':'bg-red-500';
+          const cat = (s.category||'technical').toLowerCase();
+          const badge = catColors[cat]||'bg-slate-700 text-slate-300';
+          return `<div class="flex items-center gap-3">
+            <span class="text-sm text-slate-200 w-36 truncate">${s.name}</span>
+            <span class="text-xs px-2 py-0.5 rounded-full ${badge} w-20 text-center truncate">${cat}</span>
+            <div class="flex-1 bg-slate-800 rounded-full h-2">
+              <div class="${barColor} h-2 rounded-full skill-bar" style="width:${pct}%"></div>
+            </div>
+            <span class="text-xs text-slate-400 w-8 text-right">${pct}%</span>
+            <span class="text-xs text-slate-500 w-8 text-right">${s.years_experience}y</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+    ${gaps.length ? `
+    <div class="mt-2">
+      <p class="text-xs text-slate-400 uppercase tracking-widest mb-2">Skill Gaps</p>
+      <div class="space-y-2">
+        ${gaps.map(g=>`
+          <div class="bg-red-950/40 border border-red-800/40 rounded-xl p-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-medium text-red-300">${g.skill}</span>
+              <div class="flex gap-2 text-xs">
+                <span class="bg-red-900/50 text-red-400 px-2 py-0.5 rounded-full">Importance ${Math.round(g.importance*100)}%</span>
+                <span class="bg-orange-900/50 text-orange-400 px-2 py-0.5 rounded-full">Gap ${Math.round(g.gap_severity*100)}%</span>
+              </div>
+            </div>
+            ${g.notes ? `<p class="text-xs text-slate-400 mt-1">${g.notes}</p>` : ''}
+          </div>`).join('')}
+      </div>
+    </div>
+    <p class="text-sm text-slate-300 italic mt-2">${skills.gap_summary||''}</p>` : ''}
+  `;
+
+  // ── Score ──
+  const scoreEl = document.getElementById('sec-score');
+  const dims = (data.candidate_score?.dimensions || []);
+  const strengths = data.candidate_score?.strengths || [];
+  const concerns = data.candidate_score?.concerns || [];
+  scoreEl.innerHTML = `
+    <div class="space-y-3">
+      ${dims.map(d=>{
+        const pct = d.score*10;
+        const barColor = d.score>=7?'bg-emerald-500':d.score>=5?'bg-amber-500':'bg-red-500';
+        return `<div>
+          <div class="flex justify-between text-sm mb-1">
+            <span class="text-slate-300 font-medium">${d.name.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</span>
+            <span class="text-slate-400">${d.score.toFixed(1)}/10 · <span class="text-slate-500">${Math.round(d.weight*100)}% weight</span></span>
+          </div>
+          <div class="w-full bg-slate-800 rounded-full h-2">
+            <div class="${barColor} h-2 rounded-full skill-bar" style="width:${pct}%"></div>
+          </div>
+          <p class="text-xs text-slate-500 mt-1">${d.rationale}</p>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="grid grid-cols-2 gap-4 mt-4">
+      <div class="bg-emerald-950/40 border border-emerald-800/40 rounded-xl p-4">
+        <p class="text-xs text-emerald-400 uppercase tracking-widest mb-2">Strengths</p>
+        <ul class="space-y-1">${strengths.map(s=>`<li class="text-sm text-slate-300 flex gap-2"><span class="text-emerald-400">✓</span>${s}</li>`).join('')}</ul>
+      </div>
+      <div class="bg-red-950/40 border border-red-800/40 rounded-xl p-4">
+        <p class="text-xs text-red-400 uppercase tracking-widest mb-2">Concerns</p>
+        <ul class="space-y-1">${concerns.map(c=>`<li class="text-sm text-slate-300 flex gap-2"><span class="text-red-400">✗</span>${c}</li>`).join('')}</ul>
+      </div>
+    </div>
+  `;
+
+  // ── Interview ──
+  const intEl = document.getElementById('sec-interview');
+  const rounds = ip.recommended_rounds || [];
+  const questions = ip.questions || [];
+  const roundEmoji = { screening:'📞', technical:'💻', behavioral:'🧠', system_design:'🏗️', culture_fit:'🤝' };
+  intEl.innerHTML = `
+    <div class="flex items-center gap-2 flex-wrap">
+      ${rounds.map(r=>`<span class="bg-slate-800 border border-slate-700 rounded-full px-3 py-1 text-sm">${roundEmoji[r]||'•'} ${r.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</span>`).join('<span class="text-slate-600">→</span>')}
+      <span class="ml-auto text-xs text-slate-400">⏱ ${ip.time_estimate_hours}h estimated</span>
+    </div>
+    ${rounds.map(r=>{
+      const qs = questions.filter(q=>q.round===r);
+      if (!qs.length) return '';
+      return `<div class="bg-slate-800 rounded-xl p-4 space-y-3">
+        <p class="font-semibold text-sm">${roundEmoji[r]||'•'} ${r.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())} Round</p>
+        ${qs.map((q,i)=>`
+          <div class="border-l-2 border-sky-600 pl-3">
+            <p class="text-sm font-medium text-slate-200">Q${i+1}: ${q.question}</p>
+            <p class="text-xs text-slate-400 mt-1">Purpose: ${q.purpose}</p>
+            ${q.follow_ups?.length ? `<p class="text-xs text-slate-500 mt-1">Follow-up: ${q.follow_ups[0]}</p>` : ''}
+          </div>`).join('')}
+      </div>`;
+    }).join('')}
+    ${(ip.red_flags_to_probe||[]).length ? `
+    <div class="bg-red-950/40 border border-red-800/40 rounded-xl p-4">
+      <p class="text-xs text-red-400 uppercase tracking-widest mb-2">🚩 Red Flags to Probe</p>
+      <ul class="space-y-1">${(ip.red_flags_to_probe||[]).map(f=>`<li class="text-sm text-red-300">⚑ ${f}</li>`).join('')}</ul>
+    </div>` : ''}
+  `;
+
+  // ── Recommendation Details ──
+  const recEl = document.getElementById('sec-rec');
+  recEl.innerHTML = `
+    <div class="grid grid-cols-1 gap-4">
+      ${recBlock('Key Reasons', (rec.key_reasons||[]).map(r=>'• '+r).join('\n'), 'text-emerald-400')}
+      ${recBlock('Risk Factors', (rec.risk_factors||[]).map(r=>'• '+r).join('\n') || 'None identified', 'text-red-400')}
+      ${recBlock('Development Plan', (rec.development_plan||[]).map(d=>'• '+d).join('\n') || '—', 'text-sky-400')}
+    </div>
+    <div class="grid grid-cols-2 gap-4 mt-2">
+      ${field('💰 Compensation', rec.suggested_compensation_band||'—')}
+      ${field('🏷 Start Level', rec.suggested_start_level||'—')}
+    </div>
+    ${(rec.next_steps||[]).length ? `
+    <div class="bg-slate-800 rounded-xl p-4 mt-2">
+      <p class="text-xs text-slate-400 uppercase tracking-widest mb-2">Next Steps</p>
+      <ul class="space-y-1">${(rec.next_steps||[]).map(s=>`<li class="text-sm text-slate-300">→ ${s}</li>`).join('')}</ul>
+    </div>` : ''}
+    ${(data.errors||[]).length ? `
+    <div class="bg-red-900/20 border border-red-800 rounded-xl p-3 mt-2">
+      <p class="text-xs text-red-400 mb-1">Pipeline Errors</p>
+      ${(data.errors||[]).map(e=>`<p class="text-xs text-red-300">✗ ${e}</p>`).join('')}
+    </div>` : ''}
+  `;
+
+  showSection('profile');
+}
+
+function field(label, value) {
+  return `<div class="bg-slate-800 rounded-xl p-3">
+    <p class="text-xs text-slate-400 mb-1">${label}</p>
+    <p class="text-sm text-slate-200 font-medium">${value}</p>
+  </div>`;
+}
+function recBlock(title, content, titleCls='text-slate-400') {
+  return `<div class="bg-slate-800 rounded-xl p-4">
+    <p class="text-xs ${titleCls} uppercase tracking-widest mb-2">${title}</p>
+    <pre class="text-sm text-slate-300 whitespace-pre-wrap font-sans">${content}</pre>
+  </div>`;
+}
+</script>
+</body>
+</html>

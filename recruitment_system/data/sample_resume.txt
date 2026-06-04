@@ -1,0 +1,58 @@
+ALEX MORGAN
+alex.morgan@email.com | +1 (555) 234-5678 | San Francisco, CA
+LinkedIn: linkedin.com/in/alexmorgan-dev | GitHub: github.com/alexmorgan
+
+PROFESSIONAL SUMMARY
+Senior Software Engineer with 7 years of experience building high-throughput
+distributed systems and data pipelines. Passionate about clean architecture,
+developer productivity, and mentoring engineers. Led teams of up to 6 engineers
+delivering mission-critical services processing 10M+ events/day.
+
+WORK EXPERIENCE
+
+Staff Engineer — DataFlow Inc                         Jan 2022 – Present (29 months)
+  • Designed and implemented a real-time data ingestion platform using Python/FastAPI
+    and Kafka, reducing pipeline latency from 45s to under 2s (95th percentile)
+  • Led migration of 40+ microservices from bare-metal to Kubernetes (EKS), cutting
+    infrastructure costs by 35%
+  • Established team-wide coding standards and CI/CD practices (GitHub Actions)
+  • Mentored 3 junior and 2 mid-level engineers through weekly 1:1s and code review
+  • Technologies: Python, FastAPI, Kafka, PostgreSQL, Redis, Kubernetes, AWS EKS,
+    Docker, GitHub Actions, Terraform
+
+Senior Software Engineer — CloudBase Solutions        Mar 2019 – Dec 2021 (33 months)
+  • Built REST and gRPC microservices serving 5M daily active users
+  • Optimised PostgreSQL queries and indexes, reducing p99 query time by 60%
+  • Implemented distributed caching layer (Redis Cluster) saving ~$180k/yr in DB costs
+  • Drove adoption of contract testing (Pact) across 8 service teams
+  • Technologies: Python, Django, gRPC, PostgreSQL, Redis, Docker, GCP, Celery
+
+Software Engineer — TechStartup Ltd                  Jun 2017 – Feb 2019 (20 months)
+  • Developed RESTful APIs and backend services using Flask and SQLAlchemy
+  • Wrote automated test suites (pytest, coverage >90%) for core payment flows
+  • Integrated third-party payment processors (Stripe, PayPal)
+  • Technologies: Python, Flask, SQLAlchemy, MySQL, AWS EC2, S3
+
+EDUCATION
+B.S. Computer Science — University of California, Berkeley     2013 – 2017
+  GPA: 3.7 / 4.0 | Relevant: Distributed Systems, Algorithms, Databases
+
+SKILLS
+Languages: Python (expert), SQL (expert), Bash (proficient), Go (intermediate), TypeScript (beginner)
+Frameworks: FastAPI, Django, Flask, gRPC, Celery
+Databases: PostgreSQL, MySQL, Redis, MongoDB
+Infrastructure: Docker, Kubernetes (EKS/GKE), Terraform, AWS (EC2, RDS, S3, SQS, EKS)
+Data: Kafka, RabbitMQ, Spark (basic), Airflow (basic)
+Observability: Prometheus, Grafana, Datadog, PagerDuty
+Testing: pytest, Jest, Pact (contract testing)
+Soft Skills: Technical leadership, mentorship, system design, cross-functional collaboration
+
+CERTIFICATIONS
+  • AWS Certified Solutions Architect – Associate (2023)
+  • Certified Kubernetes Administrator (CKA) (2022)
+
+PROJECTS
+  • open-source/python-cache-utils — 340 GitHub stars, async Redis wrapper with
+    automatic retry and circuit breaker patterns (Python)
+  • DataFlow Dashboard — Real-time pipeline monitoring UI built with React +
+    FastAPI WebSockets, used daily by 20 engineers
