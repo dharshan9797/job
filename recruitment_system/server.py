@@ -32,6 +32,8 @@ logging.basicConfig(level=logging.WARNING)
 
 app = FastAPI(title="Recruitment Intelligence System", version="1.0.0")
 
+_BASE = Path(__file__).parent  # always resolves correctly on Vercel and locally
+
 # Shared vector store
 _vs: RecruitmentVectorStore | None = None
 
@@ -39,10 +41,10 @@ def get_vector_store() -> RecruitmentVectorStore:
     global _vs
     if _vs is None:
         _vs = RecruitmentVectorStore(
-            persist_dir=os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
+            persist_dir=os.getenv("CHROMA_PERSIST_DIR", str(_BASE / "chroma_db"))
         )
-        jobs_file = Path("data/sample_jobs.json")
-        if jobs_file.exists():
+        jobs_file = _BASE / "data" / "sample_jobs.json"
+        if jobs_file.exists() and not (os.getenv("VERCEL") or os.getenv("VERCEL_ENV")):
             _vs.load_jobs_from_file(jobs_file)
     return _vs
 
@@ -72,7 +74,7 @@ def _run_pipeline(resume_text: str, job_title: str, job_description: str) -> dic
 
 @app.get("/", response_class=HTMLResponse)
 async def index():
-    html_path = Path(__file__).parent / "templates" / "index.html"
+    html_path = _BASE / "templates" / "index.html"
     return HTMLResponse(content=html_path.read_text(encoding="utf-8"))
 
 
@@ -114,7 +116,7 @@ async def analyse_file(
 
 @app.post("/api/demo")
 async def demo():
-    resume_file = Path("data/sample_resume.txt")
+    resume_file = _BASE / "data" / "sample_resume.txt"
     if not resume_file.exists():
         raise HTTPException(status_code=404, detail="Sample resume not found")
 

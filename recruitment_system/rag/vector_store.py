@@ -1,22 +1,46 @@
 """
 ChromaDB-backed vector store for job descriptions and skills knowledge base.
 Supports RAG retrieval for the Candidate Ranking and Recommendation agents.
+Uses a lightweight hash-based embedding so no model download is required
+(works on serverless platforms like Vercel as well as locally).
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 from pathlib import Path
 from typing import Any
 
 import chromadb
-from chromadb.utils import embedding_functions
-from langchain_chroma import Chroma
-from langchain_core.documents import Document
+from chromadb import EmbeddingFunction, Documents, Embeddings
 
 
 _COLLECTION_JOBS = "job_descriptions"
 _COLLECTION_SKILLS = "skills_knowledge_base"
+
+
+class _HashEmbedding(EmbeddingFunction):
+    """
+    Zero-dependency TF-IDF-style hash embedding.
+    No model download — works identically on local and serverless environments.
+    Dimensionality: 512 floats (sufficient for small-corpus semantic retrieval).
+    """
+    _DIM = 512
+
+    def __call__(self, input: Documents) -> Embeddings:
+        results: Embeddings = []
+        for doc in input:
+            vec = [0.0] * self._DIM
+            tokens = doc.lower().split()
+            for token in tokens:
+                h = int(hashlib.sha256(token.encode()).hexdigest(), 16)
+                vec[h % self._DIM] += 1.0
+            norm = sum(x * x for x in vec) ** 0.5
+            if norm > 0:
+                vec = [x / norm for x in vec]
+            results.append(vec)
+        return results
 
 
 class RecruitmentVectorStore:
@@ -24,16 +48,19 @@ class RecruitmentVectorStore:
     Manages two ChromaDB collections:
       - job_descriptions  : stores JD text for semantic retrieval
       - skills_knowledge_base : stores skill taxonomy for gap analysis
+    Uses in-memory client on Vercel (VERCEL env var set) and persistent client locally.
     """
 
     def __init__(self, persist_dir: str | None = None) -> None:
-        self.persist_dir = persist_dir or os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
-        Path(self.persist_dir).mkdir(parents=True, exist_ok=True)
+        self._ef = _HashEmbedding()
 
-        self._client = chromadb.PersistentClient(path=self.persist_dir)
-
-        # Default embedding: Chroma's built-in sentence-transformers (no API key needed)
-        self._ef = embedding_functions.DefaultEmbeddingFunction()
+        # Use ephemeral (in-memory) client on serverless — no file-system writes needed
+        if os.getenv("VERCEL") or os.getenv("VERCEL_ENV"):
+            self._client = chromadb.EphemeralClient()
+        else:
+            self.persist_dir = persist_dir or os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
+            Path(self.persist_dir).mkdir(parents=True, exist_ok=True)
+            self._client = chromadb.PersistentClient(path=self.persist_dir)
 
         self._jobs_col = self._client.get_or_create_collection(
             name=_COLLECTION_JOBS,
@@ -45,6 +72,12 @@ class RecruitmentVectorStore:
             embedding_function=self._ef,
             metadata={"hnsw:space": "cosine"},
         )
+
+        # On serverless every instance is cold — auto-load sample jobs if present
+        if os.getenv("VERCEL") or os.getenv("VERCEL_ENV"):
+            _jobs_file = Path(__file__).parent.parent / "data" / "sample_jobs.json"
+            if _jobs_file.exists() and self._jobs_col.count() == 0:
+                self.load_jobs_from_file(_jobs_file)
 
     # ------------------------------------------------------------------
     # Job descriptions
