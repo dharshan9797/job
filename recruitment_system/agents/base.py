@@ -13,7 +13,7 @@ from utils.helpers import extract_json_block
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_MODEL = "llama-3.3-70b-versatile"
+_DEFAULT_MODEL = "llama-3.1-8b-instant"
 
 
 class BaseRecruitmentAgent(ABC):
