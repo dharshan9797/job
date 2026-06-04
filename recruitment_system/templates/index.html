@@ -297,9 +297,21 @@ function showLoading(msg) {
 function showError(msg) {
   document.getElementById('loading').classList.add('hidden');
   document.getElementById('loading').classList.remove('flex');
+  document.getElementById('results').classList.add('hidden');
+  document.getElementById('placeholder').classList.add('hidden');
   const eb = document.getElementById('error-box');
-  eb.textContent = '⚠️  ' + msg;
+  eb.innerHTML = `
+    <div class="flex items-start gap-3">
+      <span class="text-2xl">⚠️</span>
+      <div>
+        <p class="font-semibold text-red-300 mb-1">Pipeline Failed</p>
+        <p class="text-red-400 text-sm">${msg}</p>
+        <p class="text-slate-400 text-xs mt-2">Common causes: invalid Groq API key · rate limit hit · empty resume text · very short job title</p>
+      </div>
+    </div>`;
   eb.classList.remove('hidden');
+  // Mark all steps as error
+  document.querySelectorAll('[id^=step-icon-]').forEach(el => { el.textContent = '✗'; el.closest('[id^=step-]')?.classList.replace('text-sky-400','text-red-400'); });
 }
 
 // ─── Render results ──────────────────────────────────────────────────────────

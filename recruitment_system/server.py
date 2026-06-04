@@ -69,6 +69,13 @@ def _run_pipeline(resume_text: str, job_title: str, job_description: str) -> dic
     ).model_dump()
 
     result = graph.invoke(initial)
+
+    # Surface pipeline errors as HTTP 500 so the UI shows a clear message
+    if result.get("parsed_resume") is None:
+        errors = result.get("errors", [])
+        detail = errors[0] if errors else "Resume parsing failed — check your GROQ_API_KEY and resume text."
+        raise HTTPException(status_code=500, detail=detail)
+
     return result
 
 

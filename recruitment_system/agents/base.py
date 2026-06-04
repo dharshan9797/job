@@ -55,19 +55,21 @@ class BaseRecruitmentAgent(ABC):
         Retries up to `retries` times on parse failure.
         """
         prompt_suffix = (
-            "\n\nIMPORTANT: Your entire response must be valid JSON. "
-            "Do not include any prose, markdown fences, or explanations — "
-            "return ONLY the JSON object."
+            "\n\nCRITICAL INSTRUCTION: Return ONLY a valid JSON object. "
+            "No markdown, no ```json fences, no explanation text, no preamble. "
+            "Start your response with { and end with }."
         )
         last_err: Exception | None = None
         for attempt in range(retries + 1):
             try:
-                raw = self._chat(system, human + prompt_suffix if attempt == 0 else human)
+                # Always include JSON instruction on every attempt
+                raw = self._chat(system, human + prompt_suffix)
+                self.logger.debug("Raw LLM response (attempt %d): %.200s", attempt + 1, raw)
                 return extract_json_block(raw)
-            except (ValueError, Exception) as exc:
+            except Exception as exc:
                 last_err = exc
-                self.logger.warning("JSON parse attempt %d failed: %s", attempt + 1, exc)
-        raise RuntimeError(f"Failed to parse JSON after {retries+1} attempts: {last_err}")
+                self.logger.warning("JSON parse attempt %d/%d failed: %s", attempt + 1, retries + 1, exc)
+        raise RuntimeError(f"LLM did not return valid JSON after {retries+1} attempts. Last error: {last_err}")
 
     # ------------------------------------------------------------------
     # Abstract interface
