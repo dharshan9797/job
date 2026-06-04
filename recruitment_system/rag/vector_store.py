@@ -62,22 +62,36 @@ class RecruitmentVectorStore:
             Path(self.persist_dir).mkdir(parents=True, exist_ok=True)
             self._client = chromadb.PersistentClient(path=self.persist_dir)
 
-        self._jobs_col = self._client.get_or_create_collection(
-            name=_COLLECTION_JOBS,
-            embedding_function=self._ef,
-            metadata={"hnsw:space": "cosine"},
-        )
-        self._skills_col = self._client.get_or_create_collection(
-            name=_COLLECTION_SKILLS,
-            embedding_function=self._ef,
-            metadata={"hnsw:space": "cosine"},
-        )
+        self._jobs_col = self._get_or_reset_collection(_COLLECTION_JOBS)
+        self._skills_col = self._get_or_reset_collection(_COLLECTION_SKILLS)
 
         # On serverless every instance is cold — auto-load sample jobs if present
         if os.getenv("VERCEL") or os.getenv("VERCEL_ENV"):
             _jobs_file = Path(__file__).parent.parent / "data" / "sample_jobs.json"
             if _jobs_file.exists() and self._jobs_col.count() == 0:
                 self.load_jobs_from_file(_jobs_file)
+
+    def _get_or_reset_collection(self, name: str):
+        """Get collection, auto-deleting and recreating if embedding function conflicts."""
+        try:
+            return self._client.get_or_create_collection(
+                name=name,
+                embedding_function=self._ef,
+                metadata={"hnsw:space": "cosine"},
+            )
+        except Exception as e:
+            if "embedding function" in str(e).lower() or "conflict" in str(e).lower():
+                # Stale collection used a different embedding — wipe and recreate
+                try:
+                    self._client.delete_collection(name)
+                except Exception:
+                    pass
+                return self._client.get_or_create_collection(
+                    name=name,
+                    embedding_function=self._ef,
+                    metadata={"hnsw:space": "cosine"},
+                )
+            raise
 
     # ------------------------------------------------------------------
     # Job descriptions
